@@ -1,40 +1,34 @@
-import requests
-import yaml
-import pandas as pd
+from utils.yaml_utils import load_yaml
+from utils.api_client import get_current_weather
+from utils.writers import to_csv
+from dotenv import load_dotenv
 from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")  # грузим .env из корня проекта
 
-API_KEY = "853fd1860e37d240bf5fbe5fc0738735"
+import os
+print("API ok:", bool(os.getenv("OPENWEATHER_API_KEY")))
 
-# загружаем конфиги
-with open("config/settings.yaml", encoding="utf-8") as f:
-    settings = yaml.safe_load(f)
+def main():
+    settings = load_yaml("config/settings.yaml")
+    cities = load_yaml("config/cities.yaml")
 
-with open("config/cities.yaml", encoding="utf-8") as f:
-    cities = yaml.safe_load(f)
+    base_url = settings["api"]["base_url"]
+    units = settings["defaults"]["units"]
+    lang = settings["defaults"]["lang"]
 
-base_url = settings["api"]["base_url"]
-units = settings["defaults"]["units"]
-lang = settings["defaults"]["lang"]
-
-rows = []
-
-for city in cities:
-    params = {"q": city, "appid": API_KEY, "units": units, "lang": lang}
-    r = requests.get(base_url, params=params)
-    data = r.json()
-
-    if r.status_code == 200 and data.get("main"):
+    rows = []
+    for city in cities:
+        data = get_current_weather(base_url, q=city, units=units, lang=lang)
         rows.append({
             "city": data["name"],
             "temp": data["main"]["temp"],
             "feels_like": data["main"]["feels_like"],
             "humidity": data["main"]["humidity"],
-            "conditions": data["weather"][0]["description"]
+            "conditions": data["weather"][0]["description"],
         })
-    else:
-        print("Ошибка для", city, data)
 
-# сохраняем в CSV
-df = pd.DataFrame(rows)
-df.to_csv("weather.csv", index=False, encoding="utf-8")
-print("Файл сохранён: weather.csv")
+    out = to_csv(rows, "weather.csv")
+    print(f"saved: {out}")
+
+if __name__ == "__main__":
+    main()
