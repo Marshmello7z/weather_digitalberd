@@ -1,6 +1,6 @@
 from utils.yaml_utils import load_yaml
 from utils.api_client import get_current_weather
-from utils.writers import to_csv
+from utils.writers import to_csv_timestamped
 from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")  # грузим .env из корня проекта
@@ -27,7 +27,7 @@ def main():
             "conditions": data["weather"][0]["description"],
         })
 
-    out = to_csv(rows, "weather.csv")
+    out = to_csv_timestamped(rows, outdir="data")
     print(f"saved: {out}")
 
 if __name__ == "__main__":
